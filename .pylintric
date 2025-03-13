@@ -15,7 +15,7 @@ disable=
 
 [FORMAT]
 # Set the maximum number of characters on a single line.
-max-line-length=120
+max-line-length=160
 
 [BASIC]
 # Good variable names which should always be accepted

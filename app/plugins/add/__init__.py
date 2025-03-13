@@ -1,4 +1,5 @@
 from app.commands import Command
+import logging
 
 class AddCommand(Command):
     @staticmethod
@@ -8,4 +9,7 @@ class AddCommand(Command):
     def execute(self, *args, **kwargs):
         # Ensure args are converted to floats
         a, b = map(float, args)
+        logging.info(f'{a} + {b} = {self.evaluate(a, b)}')
         print(f'{a} + {b} = {self.evaluate(a, b)}')
+        
+    

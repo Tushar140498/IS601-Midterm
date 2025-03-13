@@ -1,3 +1,4 @@
+import logging
 from app.commands import Command
 
 class DivideCommand(Command):
@@ -9,4 +10,6 @@ class DivideCommand(Command):
 
     def execute(self, *args, **kwargs):
         a, b = map(float, args)  # Convert inputs to float
+        logging.info(f'{a} / {b} = {self.evaluate(a, b)}')
         print(f'{a} / {b} = {self.evaluate(a, b)}')
+        
