@@ -1,12 +1,13 @@
 import os
 import sys
 import pkgutil
+import inspect
 import importlib
-from dotenv import load_dotenv # type: ignore
+from dotenv import load_dotenv
 import logging
 import logging.config
-
 from app.commands import Command, CommandHandler
+from app.plugins.history import HistoryCommand
 
 class App:
     def __init__(self):
@@ -15,6 +16,9 @@ class App:
         load_dotenv()
         self.settings = self.load_environment_variables()
         self.settings.setdefault('ENVIRONMENT', 'DEVELOPMENT')
+        
+        # Register the history command
+        self.command_handler.register_command("history", HistoryCommand(self.command_handler))
 
     def configure_logging(self):
         """Configure logging settings."""
@@ -53,22 +57,32 @@ class App:
                 except ImportError as e:
                     logging.error(f"Error importing plugin {plugin_name}: {e}")
 
+
     def register_plugin_commands(self, plugin_module, plugin_name):
         """Register command classes from the plugin module."""
         for item_name in dir(plugin_module):
             item = getattr(plugin_module, item_name)
             if isinstance(item, type) and issubclass(item, Command) and item is not Command:
-                # Command names are now explicitly set to the plugin's folder name
-                self.command_handler.register_command(plugin_name, item())
+                # Use inspect to check if 'command_handler' is in the constructor
+                init_signature = inspect.signature(item.__init__)
+                if 'command_handler' in init_signature.parameters:
+                    # Pass self.command_handler if 'command_handler' is an expected argument
+                    self.command_handler.register_command(plugin_name, item(self.command_handler))
+                else:
+                    # Otherwise, initialize without arguments
+                    self.command_handler.register_command(plugin_name, item())
                 logging.info(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
+
+
 
     def start(self):
         """Start the REPL for command input."""
         self.load_plugins()
-        logging.info("Application started. Type 'exit' to exit.")
-        print(f"Available commands: {', '.join(list(self.command_handler.commands.keys()))}")
-        print(f"Usage: Command num1 num2 (Ex: add 3 4) or type 'exit' to exit.\n")
-
+        logging.info("Application started.")
+        logging.info("Type 'menu' to see commands.")
+        logging.info("Type 'exit' to exit.")
+        logging.info("Type 'history show' to see history.")
+        
         while True:  # REPL (Read, Evaluate, Print, Loop)
             user_input = input(">>> ").strip().split(" ")
             command_name = user_input[0]
