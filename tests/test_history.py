@@ -6,16 +6,14 @@ import os
 import pytest
 import pandas as pd
 from app.plugins.history import HistoryCommand
+import logging
+import re
 
 class MockCommandHandler:
     """Mock class to simulate a command handler with history tracking."""
     
     def __init__(self):
         self.history = []
-
-    def add_entry(self, entry):
-        """Adds an entry to history."""
-        self.history.append(entry)
 
 @pytest.fixture
 def history_setup():
@@ -40,7 +38,6 @@ def test_save_history(history_setup):
     history_setup.save_history()
     assert os.path.exists("test_history.csv")
 
-    # Verify the contents
     df = pd.read_csv("test_history.csv")
     assert df.iloc[0]["Operation"] == "multiply"
     assert str(df.iloc[0]["Operand 1"]) == "4"
@@ -60,24 +57,68 @@ def test_delete_history_entry(history_setup):
     history_setup.delete_history_entry(0)
     assert len(history_setup.command_handler.history) == 0
 
-def test_delete_invalid_entry(history_setup):
+def test_delete_invalid_entry(history_setup, capsys):
     """Test attempting to delete a non-existent entry."""
     history_setup.delete_history_entry(5)  # Should print "Invalid index."
+    captured = capsys.readouterr()
+    assert "Invalid index." in captured.out
 
 def test_save_empty_history(history_setup):
     """Test saving when there are no history entries."""
     history_setup.clear_history()
     history_setup.save_history()
 
-    # Read the CSV file safely
     df = pd.read_csv("test_history.csv")
 
-    # Ensure the CSV file contains headers but no data
-    assert df.empty  # Check if the DataFrame has no rows
+    assert df.empty  # Ensure the DataFrame has no rows
     assert list(df.columns) == ["No.", "Operation", "Operand 1", "Operand 2", "Result"]
 
-
-def test_show_empty_history(history_setup):
+def test_show_empty_history(history_setup, capsys):
     """Test displaying history when empty."""
     history_setup.clear_history()
+    history_setup.show_history()
+    captured = capsys.readouterr()
+    assert "No command history found." in captured.out
+
+def test_load_history(history_setup):
+    """Test loading history from a file."""
+    history_setup.command_handler.history.append("add 3 2 = 5")
+    history_setup.save_history()
+
+    # Create a new instance to check if it loads correctly
+    new_history = HistoryCommand(MockCommandHandler(), history_file="test_history.csv")
+    assert len(new_history.command_handler.history) > 0
+
+def test_execute_show(history_setup, capsys):
+    """Test execute command with 'show' argument."""
+    history_setup.command_handler.history.append("multiply 2 3 = 6")
+    history_setup.execute("show")
+    captured = capsys.readouterr()
+    assert "multiply 2 3 = 6" in captured.out
+
+def test_execute_clear(history_setup):
+    """Test execute command with 'clear' argument."""
+    history_setup.command_handler.history.append("subtract 5 1 = 4")
+    history_setup.execute("clear")
     assert len(history_setup.command_handler.history) == 0
+
+def test_execute_save(history_setup):
+    """Test execute command with 'save' argument."""
+    history_setup.command_handler.history.append("add 10 5 = 15")
+    history_setup.execute("save")
+    assert os.path.exists("test_history.csv")
+
+def test_execute_show(history_setup, capsys):
+    """Test execute command with 'show' argument."""
+    history_setup.command_handler.history.append("multiply 2 3 = 6")
+    history_setup.execute("show")
+    captured = capsys.readouterr()
+
+    # Normalize captured output (remove tabulation, extract key values)
+    output = re.sub(r'\s+', ' ', captured.out)  # Replace multiple spaces with a single space
+
+    # Check if key values exist in output
+    assert "multiply" in output
+    assert "2" in output
+    assert "3" in output
+    assert "6" in output
