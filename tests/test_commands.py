@@ -6,6 +6,9 @@ from app.plugins.add import AddCommand
 from app.plugins.subtract import SubtractCommand
 from app.plugins.multiply import MultiplyCommand
 from app.plugins.divide import DivideCommand
+from app.plugins.menu import MenuCommand
+from app.plugins.exit import ExitCommand
+
 
 @pytest.mark.parametrize(
     "a, b, command, expected", [
@@ -51,3 +54,41 @@ def test_divide_by_zero():
         DivideCommand().evaluate(
             Decimal(3), Decimal(0)
         )  # Attempt to perform the calculation, which should trigger the ZeroDivisionError.
+
+def test_menu_display(capsys):
+    """
+    Test if the MenuCommand correctly displays available commands.
+    
+    This test captures the printed output of the `display_menu` function and 
+    checks if it contains all expected commands.
+    """
+    menu = MenuCommand()
+    menu.display_menu()
+
+    captured = capsys.readouterr()
+    output = captured.out
+
+    # List of expected menu items
+    expected_commands = [
+        "add                : Add two numbers",
+        "subtract           : Subtract two numbers",
+        "multiply           : Multiply two numbers",
+        "divide             : Divide two numbers",
+        "history show       : Display command history",
+        "history delete <n> : Delete the n-th entry from history",
+        "history save       : Save command history to a file",
+        "history clear      : Clear the command history",
+        "exit               : Exit the application"
+    ]
+
+    for command in expected_commands:
+        assert command in output, f"'{command}' not found in menu output"
+
+def test_exit_command():
+    """Test if ExitCommand properly exits the application."""
+    exit_cmd = ExitCommand()
+    
+    with pytest.raises(SystemExit) as excinfo:
+        exit_cmd.execute()
+
+    assert str(excinfo.value) == "Exiting the program..."

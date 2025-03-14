@@ -1,2 +1,5 @@
 No.,Operation,Operand 1,Operand 2,Result
-1,add,2,7,9.0
+1,add,2,78,80.0
+2,subtract,15,9,6.0
+3,multiply,4,5,20.0
+4,divide,8,5,1.6
