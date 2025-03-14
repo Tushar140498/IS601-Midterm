@@ -87,7 +87,6 @@ def test_menu_display(capsys):
 def test_exit_command():
     """Test if ExitCommand properly exits the application."""
     exit_cmd = ExitCommand()
-    
     with pytest.raises(SystemExit) as excinfo:
         exit_cmd.execute()
 
